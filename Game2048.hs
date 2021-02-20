@@ -14,6 +14,12 @@ data Result = EndOfGame State
         deriving (Eq, Show)
 
 
+type Player = State -> Char
+
+data Action = Action Char                 -- a move for a player is just an Int
+         deriving (Ord,Eq)
+
+
 --------- For the Update function -----------
 
 data LineState = LineState [Integer] Integer
@@ -31,7 +37,7 @@ game2048 dir (State board score)
     | otherwise                 = ContinueGame (State updated_board new_score)
     where
         (State new_board new_score) = (update_val (State (move board dir) score) dir)
-        updated_board               = addTile new_board (rand new_board)
+        updated_board               = if new_board == board then board else addTile new_board (rand new_board)
 
 -- WIN
 win :: [[Integer]] -> Bool 
