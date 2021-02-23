@@ -3,8 +3,14 @@ module Play2048 where
 import Game2048
 import TreeDict -- from lecture
 import System.IO
+import System.Random
 
-initboard = addTile (addTile [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] 1) 2
+emptyboard = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+
+initboard = 
+    do
+        num <- randomRIO (1, 2 :: Integer)
+        return (addTile (addTile emptyboard 1) num)
 
 display :: [[Integer]] -> String
 display = foldr (\ x y -> show x ++ "\n" ++ y) []
@@ -19,7 +25,8 @@ start board dict =
             return dict
         else do
             score <- play (ContinueGame (State board 0))
-            start initboard (insertval line score dict)
+            newboard <- initboard
+            start newboard (insertval line score dict)
 
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
@@ -42,4 +49,7 @@ play (EndOfGame (State board score))
         return score
 
 go :: IO (Dict [Char] Integer)
-go = start initboard emptyDict
+go = 
+    do 
+        board <- initboard
+        start board emptyDict
