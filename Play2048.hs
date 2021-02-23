@@ -20,24 +20,24 @@ start board dict =
    do
       putStrLn "Enter a username to play or 'q' to quit:"
       line <- getLine
-      if line == "q"
+      if fixdel line == "q"
         then 
             return dict
         else do
             score <- play (ContinueGame (State board 0))
             newboard <- initboard
-            start newboard (insertval line score dict)
+            start newboard (insertval (fixdel line) score dict)
 
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
    do
       putStrLn (display board++"Choose a direction:")
       dir <- getLine
-      if dir `elem` ["w", "a", "s", "d"]
+      if fixdel dir `elem` ["w", "a", "s", "d"]
         then do
-            play (game2048 (head dir) (State board score))
+            play (game2048 (head (fixdel dir)) (State board score))
         else do
-            putStrLn ("Illegal move: "++ dir)
+            putStrLn ("Illegal move: "++ fixdel dir)
             play (ContinueGame (State board score))
 
 play (EndOfGame (State board score))
@@ -53,3 +53,14 @@ go =
     do 
         board <- initboard
         start board emptyDict
+
+-- note: the following function was taken from assingment 3's solutions
+-- fixdel removes deleted elements from string
+fixdel :: [Char] -> [Char]
+fixdel st
+   | '\DEL' `elem` st = fixdel (remdel st)
+   | otherwise = st
+remdel :: [Char] -> [Char]
+remdel ('\DEL':r) = r
+remdel (a:'\DEL':r) = r
+remdel (a:r) = a: remdel r
