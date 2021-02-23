@@ -16,6 +16,7 @@ module TreeDict
 
 -- a binary search tree where k is the type of key, and v is type of value
 data BSTree k v = BSEmpty | BSNode k v (BSTree k v) (BSTree k v)
+
  --      deriving (Show)
 instance (Show k, Show v) => Show (BSTree k v) where
    --show t = "dict"    -- don't print the dictionary
@@ -46,10 +47,10 @@ getval _ BSEmpty = Nothing
 -- getval 7 test_tree
 
 -- insertval key v t  returns new tree
-insertval :: (Ord k) => k -> v -> Dict k v -> Dict k v
+insertval :: (Ord k, Ord v) => k -> v -> Dict k v -> Dict k v
 insertval key val BSEmpty = BSNode key val BSEmpty BSEmpty
 insertval key val (BSNode kt vt l r)
-     | key==kt = BSNode kt val l r   -- replace value
+     | key==kt = BSNode kt (if (val > vt) then val else vt) l r   -- replace value
      | key<kt  = BSNode kt vt (insertval key val l) r
      | otherwise  = BSNode kt vt l (insertval key val r)
 
