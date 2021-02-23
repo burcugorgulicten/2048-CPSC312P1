@@ -1,4 +1,6 @@
 module Game2048 where
+import System.Random
+import System.IO.Unsafe
 
 b  :: [[Integer]]
 b = [[2,0,0,0],[0,0,0,2],[0,2,0,0],[2,0,0,0]]
@@ -14,9 +16,11 @@ data Result = EndOfGame State
         deriving (Eq, Show)
 
 
+
+---- For trial
 type Player = State -> Char
 
-data Action = Action Char                 -- a move for a player is just an Int
+data Action = Action Char                 
          deriving (Ord,Eq)
 
 
@@ -36,8 +40,10 @@ game2048 dir (State board score)
     | isGameOver updated_board  = EndOfGame (State b 0)           -- no more moves
     | otherwise                 = ContinueGame (State updated_board new_score)
     where
+        tile                        = unsafePerformIO rand
         (State new_board new_score) = (update_val (State (move board dir) score) dir)
-        updated_board               = if new_board == board then board else addTile new_board (rand new_board)
+        updated_board               = if new_board == board then board else addTile new_board tile
+
 
 -- WIN
 win :: [[Integer]] -> Bool 
@@ -63,35 +69,43 @@ isGameOverVertical ((h1:t1):(h2:t2):(h3:t3):(h4:t4):[]) = (h1 /= h2) && (h2 /= h
 
 -- Given the board use the first non-zero element to generate 
 -- a random number: 1 or 2
-rand :: [[Integer]] -> Integer
-rand lst = if mod_n == 0 then 1 else mod_n
-    where 
-        n     = rand_choose lst
-        mod_n = mod n 3
-
-rand_choose :: [[Integer]] -> Integer
-rand_choose [[]] = 0
-rand_choose ([]:(h2:t2):t) = rand_choose ((h2:t2):t)
-rand_choose ((h1:t1):t)
-    | h1 /= 0   = h1
-    | otherwise = rand_choose (t1:t)
+rand :: IO Integer
+rand = 
+    do
+        num <- randomRIO (1, 2 :: Integer)
+        return num
 
 
--- Basic addTile where it adds the tile at the first 0
 
-addTile :: [[Integer]] -> Integer -> [[Integer]]
-addTile [[]] n = [[]]
+numberofZeros :: [[Integer]] -> Integer
+numberofZeros lst = foldr (\ i n -> foldr (\ ii nn -> if ii == 0 then nn+1 else nn) n i) 0 lst
 
-addTile ([]:(h2:t2):t) n = []:lst
+addTileRandSpot :: [[Integer]] -> Integer -> IO Integer
+addTileRandSpot lst n = 
+    do
+        num <- randomRIO (1, n :: Integer)
+        return num
+
+
+
+addTileRand :: [[Integer]] -> Integer -> Integer -> [[Integer]]
+addTileRand [[]] n val = [[]]
+
+addTileRand lst 0 val = lst
+
+addTileRand ([]:(h2:t2):t) pos val = []:lst
      where 
-        lst = addTile ((h2:t2):t) n
+        lst = addTileRand ((h2:t2):t) pos val
 
-addTile ((h1:t1):t) n
-    | h1 == 0 = ((n*2):t1):t
+addTileRand ((h1:t1):t) pos val
+    | (h1 == 0) && (pos == 1) = ((val*2):t1):t
     | otherwise = ((h1:tt2):tt)
     where 
-        (tt2:tt) = addTile (t1:t) n
-
+        newpos = if (h1 == 0) then (pos - 1) else pos
+        (tt2:tt) = addTileRand (t1:t) newpos val
+    
+addTile lst tile = addTileRand lst n tile
+    where n = unsafePerformIO (addTileRandSpot lst ((numberofZeros lst)))
 
 
 
@@ -234,3 +248,58 @@ update_val_r (LineState (h1:h2:h3:h4:[]) score)
    where 
        (LineState lst1 sc1) = update_val_r (LineState (0:h1:h2:[]) 0)
        (LineState lst2 sc2) = update_val_r (LineState (h1:h2:h3:[]) 0)
+
+
+
+-- Challenge Game:
+-- Counts down your moves and you have to have the tiles combine
+-- to the numbers it gives you, doesn't have score
+-- Have the given numbers as an array and remove the element each time 
+-- it is created. If the array is empty and moves /= -1 then win 
+-- if moves == 0 and the array is not empty lose
+
+-- Challenge1: 2 tiles of 8
+--             Moves 10
+-- [[Integer]]: board
+-- Integer:     moves
+-- [(Integer, Integer)]:   tiles, first integer is the value of the tile 
+--                         second integer is the number of tiles you should
+--                         have with this number
+
+data ChallengeState = ChallengeState [[Integer]] Integer [(Integer, Integer)]
+    deriving (Ord, Eq, Show)
+
+data ChallengeResult = EndOfGameChallenge ChallengeState
+                    | ContinueGameChallenge ChallengeState
+    deriving (Eq, Show)
+
+
+
+type ChallengeGame = Char -> ChallengeState -> ChallengeResult
+
+game2048challenge :: ChallengeGame
+game2048challenge dir (ChallengeState board moves tiles) 
+    | win_challenge update_board tiles  = EndOfGameChallenge (ChallengeState final_board update_moves tiles)   -- agent wins
+    | update_moves == 0                 = EndOfGameChallenge (ChallengeState final_board (-1) tiles)           -- no more moves
+    | otherwise                         = ContinueGameChallenge (ChallengeState final_board update_moves tiles)
+    where
+        tile            = unsafePerformIO rand
+        temp_board      = (move board dir)
+        update_board    = update_challenge temp_board dir
+        final_board     = if update_board == board 
+                            then board 
+                            else addTile update_board tile
+        update_moves    = if update_board == board
+                            then moves 
+                            else moves - 1
+
+
+win_challenge:: [[Integer]] -> [(Integer, Integer)] -> Bool
+win_challenge board tiles = foldr (\ x y -> (atleast_includes board x) && y) True tiles
+
+update_challenge:: [[Integer]]-> Char -> [[Integer]]
+update_challenge board dir = new_board
+    where (State new_board score) = update_val (State board 0) dir
+        
+atleast_includes :: [[Integer]] -> (Integer, Integer) -> Bool
+atleast_includes board (val, n) = n <= (foldr (\ lst num -> (foldr (\ v curnum -> curnum + (div v val)) num lst)) 0 board)
