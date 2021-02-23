@@ -37,7 +37,7 @@ type Game = Char -> State -> Result
 game2048 :: Game
 game2048 dir (State board score) 
     | win updated_board         = EndOfGame (State board score)   -- agent wins
-    | isGameOver updated_board  = EndOfGame (State b 0)           -- no more moves
+    | isGameOver updated_board  = EndOfGame (State b score)           -- no more moves
     | otherwise                 = ContinueGame (State updated_board new_score)
     where
         tile                        = unsafePerformIO rand
