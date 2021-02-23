@@ -1,23 +1,25 @@
 module Play2048 where
 
 import Game2048
+import TreeDict -- from lecture
 import System.IO
 
-sb = [[2,0,0,0],[0,0,0,2],[0,2,0,0],[2,0,0,0]]
+initboard = addTile (addTile [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]] 1) 2
 
 display :: [[Integer]] -> String
 display = foldr (\ x y -> show x ++ "\n" ++ y) []
 
-start :: [[Integer]] -> IO Integer
-start board =
+start :: [[Integer]] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
+start board dict =
    do
       putStrLn "Enter a username to play or 'q' to quit:"
       line <- getLine
       if line == "q"
         then 
-            return 0
+            return dict
         else do
-            play (ContinueGame (State board 0))
+            score <- play (ContinueGame (State board 0))
+            start initboard (insertval line score dict)
 
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
@@ -39,5 +41,5 @@ play (EndOfGame (State board score))
         putStrLn "You win!"
         return score
 
-go :: IO Integer
-go = start sb
+go :: IO (Dict [Char] Integer)
+go = start initboard emptyDict
