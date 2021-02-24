@@ -1,5 +1,10 @@
 module Play2048 where
 
+-- To run it, try:
+-- ghci
+-- :load Play2048
+-- go
+
 import Game2048
 import TreeDict -- from lecture
 import System.IO
@@ -7,13 +12,22 @@ import System.Random
 
 emptyboard = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
 
+-- initboard creates a new board with 2 random tiles
 initboard = 
     do
         num <- randomRIO (1, 2 :: Integer)
         return (addTile (addTile emptyboard 1) num)
 
+-- display b prints the board with proper spacing
 display :: [[Integer]] -> String
-display = foldr (\ x y -> show x ++ "\n" ++ y) []
+display b = "\n" ++ foldr (\ x y -> foldr displaynum "" x ++ "\n" ++ y) "\n" b
+
+displaynum :: Integer -> String -> String
+displaynum x y
+    | x < 10 = show x ++ "    " ++ y
+    | x < 100 = show x ++ "   " ++ y
+    | x < 1000 = show x ++ "  " ++ y
+    | otherwise = show x ++ " " ++ y
 
 start :: [[Integer]] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
 start board dict =
@@ -54,7 +68,7 @@ go =
         board <- initboard
         start board emptyDict
 
--- note: the following function was taken from assingment 3's solutions
+-- note: the following function was taken from the Assignment 3 solutions
 -- fixdel removes deleted elements from string
 fixdel :: [Char] -> [Char]
 fixdel st
