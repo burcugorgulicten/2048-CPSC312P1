@@ -54,12 +54,12 @@ play (ContinueGame (State board score)) =
             putStrLn ("Illegal move: "++ fixdel dir)
             play (ContinueGame (State board score))
 
-play (EndOfGame (State board score))
-    | score == 0 = do
-        putStrLn "You lose"
+play (EndOfGame (State board score) won)
+    | won = do
+        putStrLn "You win!"
         return score
     | otherwise = do
-        putStrLn "You win!"
+        putStrLn "Game over"
         return score
 
 go :: IO (Dict [Char] Integer)

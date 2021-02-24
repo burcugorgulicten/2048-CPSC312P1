@@ -11,7 +11,9 @@ data State = State [[Integer]] Integer
         deriving (Ord, Eq, Show)
 
 
-data Result = EndOfGame State
+-- Bool for EndOfGame is to indicate whether reached 
+-- 2048 or not
+data Result = EndOfGame State Bool
             | ContinueGame State
         deriving (Eq, Show)
 
@@ -36,8 +38,8 @@ type Game = Char -> State -> Result
 
 game2048 :: Game
 game2048 dir (State board score) 
-    | win updated_board         = EndOfGame (State board score)   -- agent wins
-    | isGameOver updated_board  = EndOfGame (State b score)           -- no more moves
+    | win updated_board         = EndOfGame (State updated_board new_score) True    
+    | isGameOver updated_board  = EndOfGame (State updated_board new_score) False          
     | otherwise                 = ContinueGame (State updated_board new_score)
     where
         tile                        = unsafePerformIO rand
