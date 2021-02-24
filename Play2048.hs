@@ -24,6 +24,7 @@ display b = "\n" ++ foldr (\ x y -> foldr displaynum "" x ++ "\n" ++ y) "\n" b
 
 displaynum :: Integer -> String -> String
 displaynum x y
+    | x == 0 = "*    " ++ y
     | x < 10 = show x ++ "    " ++ y
     | x < 100 = show x ++ "   " ++ y
     | x < 1000 = show x ++ "  " ++ y
@@ -45,7 +46,7 @@ start board dict =
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
    do
-      putStrLn (display board++"Choose a direction:")
+      putStrLn ("\nScore: "++show score++display board++"Choose a direction (w,a,s,d):")
       dir <- getLine
       if fixdel dir `elem` ["w", "a", "s", "d"]
         then do
@@ -56,7 +57,7 @@ play (ContinueGame (State board score)) =
 
 play (EndOfGame (State board score) won)
     | won = do
-        putStrLn "You win!"
+        putStrLn (display board++"You win! Score: "++show score)
         return score
     | otherwise = do
         putStrLn "Game over"
