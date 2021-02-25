@@ -65,6 +65,26 @@ play (EndOfGame (State board score) won)
         putStrLn "Game over"
         return score
 
+playChallenge :: ChallengeResult -> IO Integer
+playChallenge (ContinueGameChallenge (ChallengeState board moves tiles)) =
+   do
+      putStrLn ("\n"++display board++"Choose a direction (w,a,s,d):")
+      dir <- getLine
+      if fixdel dir `elem` ["w", "a", "s", "d"]
+        then do
+            playChallenge (game2048challenge (head (fixdel dir)) (ChallengeState board moves tiles))
+        else do
+            putStrLn ("Illegal move: "++ fixdel dir)
+            playChallenge (ContinueGameChallenge (ChallengeState board moves tiles))
+
+playChallenge (EndOfGameChallenge (ChallengeState board moves tiles))
+    | moves == -1 = do
+        putStrLn (display board++"Game over")
+        return 0
+    | otherwise = do
+        putStrLn "You win!"
+        return 1
+
 -- leaderboard dict shows a leaderboard with the top usernames and scores
 leaderboard :: Dict [Char] Integer -> [Char]
 leaderboard dict = "Leaderboard\n" ++ foldr showpair "" (top5 dict)
