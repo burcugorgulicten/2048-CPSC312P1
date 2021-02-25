@@ -9,6 +9,7 @@ import Game2048
 import TreeDict -- from lecture
 import System.IO
 import System.Random
+import Data.List
 
 emptyboard = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
 
@@ -40,6 +41,7 @@ start board dict =
             return dict
         else do
             score <- play (ContinueGame (State board 0))
+            putStrLn (leaderboard (insertval (fixdel line) score dict))
             newboard <- initboard
             start newboard (insertval (fixdel line) score dict)
 
@@ -63,6 +65,18 @@ play (EndOfGame (State board score) won)
         putStrLn "Game over"
         return score
 
+-- leaderboard dict shows a leaderboard with the top usernames and scores
+leaderboard :: Dict [Char] Integer -> [Char]
+leaderboard dict = "Leaderboard\n" ++ foldr showpair "" (top5 dict)
+
+-- showpair (k,v) r formats the pair and appends it to r
+showpair :: ([Char], Integer) -> [Char] -> [Char]
+showpair (k,v) r = k ++ ": " ++ show v ++ "\n" ++ r
+
+-- sortByScore dict returns a sorted list of pairs with highest 5 scores in dict
+top5 :: Dict [Char] Integer -> [([Char], Integer)]
+top5 dict = take 5 (sortBy (\ (_,v1) (_,v2) -> compare v2 v1) (tolist dict))
+
 go :: IO (Dict [Char] Integer)
 go = 
     do 
@@ -79,3 +93,8 @@ remdel :: [Char] -> [Char]
 remdel ('\DEL':r) = r
 remdel (a:'\DEL':r) = r
 remdel (a:r) = a: remdel r
+
+-- testing values
+test_dict = insertval "p1" 1234 (insertval "p2" 5432 (insertval "p3" 2111 emptyDict))
+bw = [[1024,1024,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+bl = [[4,32,256,8],[16,4,64,4],[4,32,16,8],[2,8,4,0]]
