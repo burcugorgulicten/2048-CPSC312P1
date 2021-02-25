@@ -31,19 +31,39 @@ displaynum x y
     | x < 1000 = show x ++ "  " ++ y
     | otherwise = show x ++ " " ++ y
 
-start :: [[Integer]] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
-start board dict =
-   do
-      putStrLn "Enter a username to play or 'q' to quit:"
-      line <- getLine
-      if fixdel line == "q"
-        then 
-            return dict
-        else do
-            score <- play (ContinueGame (State board 0))
-            putStrLn (leaderboard (insertval (fixdel line) score dict))
-            newboard <- initboard
-            start newboard (insertval (fixdel line) score dict)
+go :: IO Integer
+go =
+    do
+        putStrLn "Enter a username to begin:"
+        line <- getLine
+        menu (fixdel line) emptyDict
+
+menu :: [Char] -> Dict [Char] Integer -> IO Integer
+menu user dict = 
+    do
+        putStrLn "\nMenu\n1 - regular\n2 - challenge\n3 - leaderboard\n\nEnter a menu item or 'q' to quit"
+        option <- getLine
+        if fixdel option == "q"
+            then
+                return 0
+            else do
+                board <- initboard
+                newdict <- start option user board dict
+                menu user newdict
+
+start :: [Char] -> [Char] -> [[Integer]] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
+start option user board dict
+    | option == "1" = do
+        score <- play (ContinueGame (State board 0))
+        return (insertval user score dict)
+    | option == "2" = do
+        -- todo: set challenge params
+        result <- playChallenge (ContinueGameChallenge (ChallengeState board 0 []))
+        return dict
+    | option == "3" = do
+        putStrLn (leaderboard dict)
+        return dict
+    | otherwise = return dict
 
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
@@ -96,12 +116,6 @@ showpair (k,v) r = k ++ ": " ++ show v ++ "\n" ++ r
 -- sortByScore dict returns a sorted list of pairs with highest 5 scores in dict
 top5 :: Dict [Char] Integer -> [([Char], Integer)]
 top5 dict = take 5 (sortBy (\ (_,v1) (_,v2) -> compare v2 v1) (tolist dict))
-
-go :: IO (Dict [Char] Integer)
-go = 
-    do 
-        board <- initboard
-        start board emptyDict
 
 -- note: the following function was taken from the Assignment 3 solutions
 -- fixdel removes deleted elements from string
