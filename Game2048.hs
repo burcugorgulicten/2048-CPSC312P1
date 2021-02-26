@@ -405,8 +405,8 @@ update_val_challenge_r (h1:h2:h3:h4:[])
 
 data ChallengeGameEnv = ChallengeGameEnv Integer [(Integer, Integer)] [Integer] Integer Integer
     deriving (Ord, Eq, Show)
-challange_games :: [ChallengeGameEnv]
-challange_games = [
+challenge_games :: [ChallengeGameEnv]
+challenge_games = [
     (ChallengeGameEnv 10 [(8,2)] [1,1] 0 0),
     (ChallengeGameEnv 15 [(8,3),(16,1)] [1,1] 0 0),
     (ChallengeGameEnv 27 [(8,7),(16,3),(32,1)] [1,1] 0 0),

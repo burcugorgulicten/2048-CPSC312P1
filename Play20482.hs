@@ -117,7 +117,7 @@ go =
         else if fixedline == "2"
             then
                 do
-                    let (ChallengeGameEnv moves tiles n movable static) = (challange_games !! 0)
+                    let (ChallengeGameEnv moves tiles n movable static) = (challenge_games !! 0)
                     board <- initboardchallenge emptyboard n movable static
                     startChallenge board moves tiles 0
                     return emptyDict
@@ -132,7 +132,7 @@ startChallenge:: [[Integer]] -> Integer -> [(Integer, Integer)] -> Integer -> IO
 startChallenge board moves tiles index=
    do
        cur_index <- playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index))
-       let (ChallengeGameEnv new_moves new_tiles n movable static) = (challange_games !! fromIntegral(cur_index))
+       let (ChallengeGameEnv new_moves new_tiles n movable static) = (challenge_games !! fromIntegral(cur_index))
        putStrLn ("Would you like to continue? 'yes', 'no'")
        continue <- getLine 
        if fixdel continue == "yes"
@@ -157,7 +157,7 @@ playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index)) =
 playChallenge (EndOfGameChallenge (ChallengeState board moves tiles index) won)
     | won = do
         putStrLn (display board++"Challenge complete!")
-        if index == fromIntegral ((length challange_games) - 1)
+        if index == fromIntegral ((length challenge_games) - 1)
             then do 
                 putStrLn ("Cleared all challenges!")
                 return index -- can retun -1 to check it later to see if all levels are cleared in startchallenge

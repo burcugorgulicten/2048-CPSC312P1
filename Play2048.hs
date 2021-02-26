@@ -11,13 +11,24 @@ import System.IO
 import System.Random
 import Data.List
 
+-- starting board with no tiles
 emptyboard = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
 
 -- initboard creates a new board with 2 random tiles
+initboard :: IO [[Integer]]
 initboard = 
     do
         num <- randomRIO (1, 2 :: Integer)
         return (addTile (addTile emptyboard 1) num)
+
+-- initboardchallenge board n m s creates a new challenge board
+-- with n normal tiles, m movable tiles, and s static tiles 
+initboardchallenge :: [[Integer]] -> [Integer] -> Integer -> Integer -> IO [[Integer]]
+initboardchallenge board n m s 
+    | n /= [] = initboardchallenge (addTile board (head n)) (tail n) m s
+    | m > 0 = initboardchallenge (addTile board (-1)) n (m-1) s
+    | s > 0 = initboardchallenge (addTile board (-2)) n m (s-1)
+    | otherwise = return board
 
 -- display b prints the board with proper spacing
 display :: [[Integer]] -> String
@@ -36,34 +47,46 @@ go =
     do
         putStrLn "Enter a username to begin:"
         line <- getLine
-        menu (fixdel line) emptyDict
+        main (fixdel line) emptyDict
 
-menu :: [Char] -> Dict [Char] Integer -> IO Integer
-menu user dict = 
+menu = "\nMenu\n1 - New game\n2 - New challenge game\n3 - Display leaderboard\n\nEnter a menu item or 'q' to quit"
+
+main :: [Char] -> Dict [Char] Integer -> IO Integer
+main user dict = 
     do
-        putStrLn "\nMenu\n1 - regular\n2 - challenge\n3 - leaderboard\n\nEnter a menu item or 'q' to quit"
+        putStrLn menu
         option <- getLine
         if fixdel option == "q"
             then
                 return 0
             else do
-                board <- initboard
-                newdict <- start option user board dict
-                menu user newdict
+                newdict <- start option user dict
+                main user newdict
 
-start :: [Char] -> [Char] -> [[Integer]] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
-start option user board dict
-    | option == "1" = do
+start :: [Char] -> [Char] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
+-- start regular game
+start "1" user dict =
+    do
+        board <- initboard
         score <- play (ContinueGame (State board 0))
         return (insertval user score dict)
-    | option == "2" = do
-        -- todo: set challenge params
-        result <- playChallenge (ContinueGameChallenge (ChallengeState board 0 []))
+
+-- start challenge game
+start "2" user dict =
+    do
+        let (ChallengeGameEnv moves tiles n movable static) = head challenge_games
+        board <- initboardchallenge emptyboard n movable static
+        result <- startChallenge board moves tiles 0
         return dict
-    | option == "3" = do
+
+-- show leaderboard
+start "3" user dict =
+    do
         putStrLn (leaderboard dict)
         return dict
-    | otherwise = return dict
+
+-- invalid menu option
+start _ user dict = return dict
 
 play :: Result -> IO Integer
 play (ContinueGame (State board score)) =
@@ -85,29 +108,50 @@ play (EndOfGame (State board score) won)
         putStrLn "Game over"
         return score
 
-playChallenge :: ChallengeResult -> IO Integer
-playChallenge (ContinueGameChallenge (ChallengeState board moves tiles)) =
+startChallenge:: [[Integer]] -> Integer -> [(Integer, Integer)] -> Integer -> IO Integer
+startChallenge board moves tiles index =
    do
-      putStrLn ("\n"++display board++"Choose a direction (w,a,s,d):")
+       cur_index <- playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index))
+       let (ChallengeGameEnv new_moves new_tiles n movable static) = challenge_games !! fromIntegral cur_index
+       putStrLn "Would you like to continue? 'yes', 'no'"
+       continue <- getLine 
+       if fixdel continue == "yes"
+           then do
+               new_board <- initboardchallenge emptyboard n movable static
+               startChallenge new_board new_moves new_tiles cur_index
+            else
+                return cur_index
+
+playChallenge :: ChallengeResult -> IO Integer
+playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index)) =
+   do
+      putStrLn ("\nMoves Left: "++show moves++"\nTiles: "++show tiles++display board++"Choose a direction (w,a,s,d):")
       dir <- getLine
       if fixdel dir `elem` ["w", "a", "s", "d"]
         then do
-            playChallenge (game2048challenge (head (fixdel dir)) (ChallengeState board moves tiles))
+            playChallenge (game2048challenge (head (fixdel dir)) (ChallengeState board moves tiles index))
         else do
             putStrLn ("Illegal move: "++ fixdel dir)
-            playChallenge (ContinueGameChallenge (ChallengeState board moves tiles))
+            playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index))
 
-playChallenge (EndOfGameChallenge (ChallengeState board moves tiles))
-    | moves == -1 = do
-        putStrLn (display board++"Game over")
-        return 0
+playChallenge (EndOfGameChallenge (ChallengeState board moves tiles index) won)
+    | won = do
+        putStrLn (display board++"Challenge complete!")
+        if index == fromIntegral (length challenge_games) - 1
+            then do 
+                putStrLn "Cleared all challenges!"
+                return index
+            else do
+                return (index + 1)
     | otherwise = do
-        putStrLn "You win!"
-        return 1
+        putStrLn "Game over"
+        return index
 
 -- leaderboard dict shows a leaderboard with the top usernames and scores
 leaderboard :: Dict [Char] Integer -> [Char]
-leaderboard dict = "Leaderboard\n" ++ foldr showpair "" (top5 dict)
+leaderboard dict
+    | tolist dict == [] = "\nno scores to display"
+    | otherwise = "\nLeaderboard\n" ++ foldr showpair "" (top5 dict)
 
 -- showpair (k,v) r formats the pair and appends it to r
 showpair :: ([Char], Integer) -> [Char] -> [Char]
