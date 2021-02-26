@@ -10,6 +10,7 @@ import TreeDict -- from lecture
 import System.IO
 import System.Random
 import Data.List
+import System.Directory
 
 -- starting board with no tiles
 emptyboard = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
@@ -42,12 +43,32 @@ displaynum x y
     | x < 1000 = show x ++ "  " ++ y
     | otherwise = show x ++ " " ++ y
 
+loadDict :: IO (Dict [Char] Integer)
+loadDict =
+    do
+        scoresExist <- doesFileExist "scores.txt"
+        if scoresExist
+            then do
+                contents <- readFile "scores.txt"
+                let pairs = makepairs (lines contents)
+                return (foldr (uncurry insertval) emptyDict pairs)
+            else
+                return emptyDict
+
+makepairs :: [[Char]] -> [([Char], Integer)]
+makepairs [] = []
+makepairs (k:v:t) = (k, read v) : makepairs t
+
+saveDict :: Dict [Char] Integer -> IO ()
+saveDict dict = writeFile "scores.txt" (foldr (\ (k,v) y -> k++"\n"++show v++"\n"++y) "" (tolist dict))
+
 go :: IO Integer
 go =
     do
         putStrLn "Enter a username to begin:"
         line <- getLine
-        main (fixdel line) emptyDict
+        dict <- loadDict
+        main (fixdel line) dict
 
 menu = "\nMenu\n1 - New game\n2 - New challenge game\n3 - Display leaderboard\n\nEnter a menu item or 'q' to quit"
 
@@ -57,7 +78,8 @@ main user dict =
         putStrLn menu
         option <- getLine
         if fixdel option == "q"
-            then
+            then do
+                saveDict dict 
                 return 0
             else do
                 newdict <- start option user dict
@@ -150,7 +172,7 @@ playChallenge (EndOfGameChallenge (ChallengeState board moves tiles index) won)
 -- leaderboard dict shows a leaderboard with the top usernames and scores
 leaderboard :: Dict [Char] Integer -> [Char]
 leaderboard dict
-    | tolist dict == [] = "\nno scores to display"
+    | null (tolist dict) = "\nno scores to display"
     | otherwise = "\nLeaderboard\n" ++ foldr showpair "" (top5 dict)
 
 -- showpair (k,v) r formats the pair and appends it to r
