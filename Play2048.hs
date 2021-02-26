@@ -62,6 +62,13 @@ makepairs (k:v:t) = (k, read v) : makepairs t
 saveDict :: Dict [Char] Integer -> IO ()
 saveDict dict = writeFile "scores.txt" (foldr (\ (k,v) y -> k++"\n"++show v++"\n"++y) "" (tolist dict))
 
+convertScore :: Maybe Integer -> Integer
+convertScore Nothing = 0
+convertScore (Just score) = score
+
+getHighscore :: [Char] -> Dict [Char] Integer -> Integer
+getHighscore user dict = convertScore (getval user dict)
+
 go :: IO Integer
 go =
     do
@@ -82,7 +89,7 @@ main user dict =
                 saveDict dict 
                 return 0
             else do
-                newdict <- start option user dict
+                newdict <- start (fixdel option) user dict
                 main user newdict
 
 start :: [Char] -> [Char] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
@@ -90,7 +97,7 @@ start :: [Char] -> [Char] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
 start "1" user dict =
     do
         board <- initboard
-        score <- play (ContinueGame (State board 0))
+        score <- play (ContinueGame (State board 0)) (getHighscore user dict)
         return (insertval user score dict)
 
 -- start challenge game
@@ -108,21 +115,24 @@ start "3" user dict =
         return dict
 
 -- invalid menu option
-start _ user dict = return dict
+start _ user dict = 
+    do
+        putStrLn "Invalid menu option"
+        return dict
 
-play :: Result -> IO Integer
-play (ContinueGame (State board score)) =
+play :: Result -> Integer -> IO Integer
+play (ContinueGame (State board score)) highscore =
    do
-      putStrLn ("\nScore: "++show score++display board++"Choose a direction (w,a,s,d):")
+      putStrLn ("\nScore: "++show score++" Best: "++show (max score highscore)++display board++"Choose a direction (w,a,s,d):")
       dir <- getLine
       if fixdel dir `elem` ["w", "a", "s", "d"]
         then do
-            play (game2048 (head (fixdel dir)) (State board score))
+            play (game2048 (head (fixdel dir)) (State board score)) highscore
         else do
             putStrLn ("Illegal move: "++ fixdel dir)
-            play (ContinueGame (State board score))
+            play (ContinueGame (State board score)) highscore
 
-play (EndOfGame (State board score) won)
+play (EndOfGame (State board score) won) highscore
     | won = do
         putStrLn (display board++"You win! Score: "++show score)
         return score
