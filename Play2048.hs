@@ -18,6 +18,8 @@ go =
         putStrLn "Enter a username to begin:"
         line <- getLine
         dict <- loadDict
+        let user = fixdel line
+        putStrLn ("Welcome "++user++"! Your high score is "++show (getHighscore user dict))
         main (fixdel line) dict
 
 -- main menu
