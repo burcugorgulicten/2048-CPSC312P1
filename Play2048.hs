@@ -150,12 +150,14 @@ display b = "\n" ++ foldr (\ x y -> foldr displaynum "" x ++ "\n" ++ y) "\n" b
 
 -- helper for display - displaynum n s appends n to s with spacing
 displaynum :: Integer -> String -> String
-displaynum n s
-    | n == 0 = "*    " ++ s
-    | n < 10 = show n ++ "    " ++ s
-    | n < 100 = show n ++ "   " ++ s
-    | n < 1000 = show n ++ "  " ++ s
-    | otherwise = show n ++ " " ++ s
+displaynum x y
+    | x == 0 = "・    " ++ y
+    | x == -2 = "。    " ++ y
+    | x == -4 = "ー    " ++ y
+    | x < 10 = show x ++ "     " ++ y
+    | x < 100 = show x ++ "    " ++ y
+    | x < 1000 = show x ++ "   " ++ y
+    | otherwise = show x ++ "  " ++ y
 
 
 ------------ Dict Functions -------------
