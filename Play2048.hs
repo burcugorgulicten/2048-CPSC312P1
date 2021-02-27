@@ -69,13 +69,16 @@ start _ user dict =
 play :: Result -> Integer -> IO Integer
 play (ContinueGame (State board score)) highscore =
    do
-      putStrLn ("\nScore: "++show score++" Best: "++show (max score highscore)++display board++"Choose a direction (w,a,s,d):")
-      dir <- getLine
-      if fixdel dir `elem` ["w", "a", "s", "d"]
+      putStrLn ("\nScore: "++show score++" Best: "++show (max score highscore)++display board++"Choose a direction (w,a,s,d) or 'q' to quit:")
+      line <- getLine
+      let dir = fixdel line
+      if dir `elem` ["w", "a", "s", "d"]
         then do
-            play (game2048 (head (fixdel dir)) (State board score)) highscore
+            play (game2048 (head dir) (State board score)) highscore
+        else if dir == "q" then do
+            play (EndOfGame (State board score) False) highscore
         else do
-            putStrLn ("Illegal move: "++ fixdel dir)
+            putStrLn ("Illegal move: "++ dir)
             play (ContinueGame (State board score)) highscore
 
 play (EndOfGame (State board score) won) highscore
