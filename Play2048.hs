@@ -12,6 +12,7 @@ import System.Random
 import Data.List
 import System.Directory
 
+-- go is the starting point for the game
 go :: IO Integer
 go =
     do
@@ -25,6 +26,7 @@ go =
 -- main menu
 menu = "\nMenu\n1 - New game\n2 - New challenge game\n3 - Display leaderboard\n\nEnter a menu item or 'q' to quit"
 
+-- main user dict displays the menu to the user and takes in their response
 main :: [Char] -> Dict [Char] Integer -> IO Integer
 main user dict = 
     do
@@ -38,6 +40,7 @@ main user dict =
                 newdict <- start (fixdel option) user dict
                 main user newdict
 
+-- start option user dict launches the user's selected option and returns the updated dictionary
 start :: [Char] -> [Char] -> Dict [Char] Integer -> IO (Dict [Char] Integer)
 -- start regular game
 start "1" user dict =
@@ -66,6 +69,7 @@ start _ user dict =
         putStrLn "Invalid menu option"
         return dict
 
+-- play result highscore prompts the user for a move and updates the game state
 play :: Result -> Integer -> IO Integer
 play (ContinueGame (State board score)) highscore =
    do
@@ -89,6 +93,7 @@ play (EndOfGame (State board score) won) highscore
         putStrLn "Game over"
         return score
 
+-- startChallenge board moves tiles index starts each level of the challenge verison of the game
 startChallenge:: [[Integer]] -> Integer -> [(Integer, Integer)] -> Integer -> IO Integer
 startChallenge board moves tiles index =
    do
@@ -103,6 +108,7 @@ startChallenge board moves tiles index =
             else
                 return cur_index
 
+-- playChallenge result prompts the user for a move and updates the challenge game state 
 playChallenge :: ChallengeResult -> IO Integer
 playChallenge (ContinueGameChallenge (ChallengeState board moves tiles index)) =
    do
